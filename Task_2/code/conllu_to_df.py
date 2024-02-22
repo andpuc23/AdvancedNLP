@@ -29,4 +29,4 @@ def process_file(conll_file, output_csv):
   big_df = pd.concat(all_df, ignore_index=True)
   print(len(big_df))
   # output_csv = '../UP-1.0/output/en_ewt-up-dev.csv'
-  big_df.to_csv(output_csv)
+  big_df.to_csv(output_csv, index=False, header=False)
