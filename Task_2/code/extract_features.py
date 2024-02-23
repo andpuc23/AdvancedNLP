@@ -65,6 +65,14 @@ def extract_features(inputfile, outputfile):
 
     # print('extracted distance to deps')
 
+    # labels
+    # for ent in doc.ents:
+    #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
+    
+    # entity
+    feature_dict.update({'Entity_type': [tok.ent_type_ for tok in doc]})
+
+    
 
     # I want to implement a feature that uses these patterns! I think they are very useful for finding the arguments!!!
     #pattern_potential_arg =  
@@ -77,7 +85,7 @@ def extract_features(inputfile, outputfile):
     #CODE: Position of predicate in the sentence
     
     #CODE: Phrase type, take from assignment 1!!!
-    phrase_type = [None]*len(doc)
+    phrase_type = ['']*len(doc)
     patterns = [{'POS': 'VBP', 'OP': '?'},
                 {'LEMMA': 'have', 'TAG': 'VBP', 'OP': '?'},
                 {'TEXT': 'not', 'OP': '?'},
@@ -87,31 +95,32 @@ def extract_features(inputfile, outputfile):
                 {'POS': 'AUX', 'OP': '*'},
                 {'POS': 'VERB', 'OP': '+'}]
 
-    matcher = spacy.matcher.Matcher(nlp.vocab)
-    matcher.add("Verb phrase", [patterns])
-    # VP
-    matches = matcher(doc)
-    for _, start, end in matches:
-        phrase_type[start:end] = ['VP']*(end-start)
+    # matcher = spacy.matcher.Matcher(nlp.vocab)
+    # matcher.add("Verb phrase", [patterns])
+    # # VP
+    # matches = matcher(doc)
+    # for _, start, end in matches:
+    #     for i in range(start, end):
+    #         phrase_type[i] = 'VP'
     
-    # spans = [doc[start:end] for _, start, end in matches]
+    # # spans = [doc[start:end] for _, start, end in matches]
 
-    ## PP
-    for i, element in enumerate(doc):
-        if element.pos_ == 'ADP':
-            phrase_type[i] = 'PP'
+    # ## PP
+    # for i, element in enumerate(doc):
+    #     if element.pos_ == 'ADP':
+    #         phrase_type[i] = 'PP'
 
 
-    # print('PPs:', pps)
+    # # print('PPs:', pps)
 
-    ## NP
-    for i, element in enumerate(doc):
-        if element.text in set(doc.noun_chunks):
-            phrase_type[i] = 'NP'   
+    # ## NP
+    # for i, element in enumerate(doc):
+    #     if element.text in set(doc.noun_chunks):
+    #         phrase_type[i] = 'NP'   
     
-    # print('NPs:', [np for np in doc.noun_chunks])
+    # # print('NPs:', [np for np in doc.noun_chunks])
 
-    print('extracted phrase type')
+    # print('extracted phrase type')
 
 
     featured_dict_1 = {'E_DEP': enhanced_dependencies, 'voice': voice}
