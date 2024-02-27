@@ -27,7 +27,7 @@ def process_file(conll_file)->pd.DataFrame:
 
     big_df = pd.concat(all_df, ignore_index=True)
     print('process_file(): dataframe len:', len(big_df))
-    return big_df`
+    return big_df
     # big_df.to_csv(output_csv, index=False, header=False)
 
 
