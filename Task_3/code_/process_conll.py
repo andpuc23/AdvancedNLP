@@ -4,15 +4,19 @@ import pandas as pd
 def _get_predicates_from_sentence(lines):
     # here we expect that sentence is a number of lines
     pred_positions = []
+    pred_columns = []
     for line in lines[2:]:
-        if any([c == 'V' for c in line.split('\t')[11:]]):
+        split_line = line.split('\t')
+        if any([c == 'V' for c in split_line[11:]]):
+            pred_index = split_line.index('V')
             pred_positions.append(int(line.split('\t')[0])-1)
-    return pred_positions
+            pred_columns.append(pred_index)
+    return pred_positions, pred_columns
 
 
 
 def process_file(conll_file)->pd.DataFrame:
-    big_df = pd.DataFrame(columns=['sentence', 'predicate', 'predicate index'])
+    big_df = pd.DataFrame(columns=['sentence', 'predicate', 'predicate index', 'predicate column'])
     with open(conll_file) as f:
         text = f.read()
     
@@ -28,10 +32,10 @@ def process_file(conll_file)->pd.DataFrame:
         if len(lines) > 1:
             sentence_text = lines[1][len('# text = '):]  # everything after "# text = ""
         
-            pred_idxs = _get_predicates_from_sentence(lines)
-            for idx in pred_idxs:
+            pred_idxs, pred_cols = _get_predicates_from_sentence(lines)
+            for idx, col in zip(pred_idxs, pred_cols):
                 word = lines[idx+2].split('\t')[1]
-                big_df.loc[len(big_df.index)] = [sentence_text, word, idx]
+                big_df.loc[len(big_df.index)] = [sentence_text, word, idx, col]
 
     print('process_file(): dataframe len:', len(big_df))
     return big_df
