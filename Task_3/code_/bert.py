@@ -7,7 +7,7 @@ import numpy as np
 task = "ner"
 model_checkpoint = "distilbert-base-uncased"
 labels_list = None
-metric = metric = load_metric("seqeval")
+metric = load_metric("seqeval")
 
 batch_size = 16 # subject to change, the bigger the better, but should fit into memory
 
@@ -32,8 +32,15 @@ def convert_to_dataset(train:pd.DataFrame,
 
 
 def get_labels_list_from_dataset(ds:DatasetDict):
-    return list(set(ds['train'].features['label'].names))
-
+    labels_set = set()
+    for label in ds['train']['labels']:
+        vals = label.split(', ')
+        for v in vals:
+            labels_set.add(v)
+    if '' in labels_set:
+        labels_set.remove('')
+    labels_list = list(labels_set)
+    return labels_list
 
 class Tokenizer:
     def __init__(self, model_checkpoint, labels_list) -> None:
@@ -45,6 +52,7 @@ class Tokenizer:
 
         self.labels_list = labels_list
 
+
     def _tokenize_input_string(self, input):
         if isinstance(input, str):
             return self.tokenizer(input, truncation=True)
@@ -52,33 +60,25 @@ class Tokenizer:
             return self.tokenizer(input, truncation=True, is_split_into_words=True)
         else:
             raise TypeError(f'tokenizer input should be str or list, got {type(input)}')
-    
-    def tokenize(self, input):
-        return map(self._tokenize_input_string, input)
+
     
     def tokenize_and_align_labels(self, examples):
-        tokenized_inputs = self.tokenizer(examples['tokens'])
-
-        labels = []
-        for i, label in enumerate(self.labels_list):
-            word_ids = tokenized_inputs.word_ids(batch_index=i)
-            previous_word_idx = None
-            label_ids = []
-            for word_idx in word_ids:
-                if word_idx is None:
-                    label_ids.append(-100)
-                # We set the label for the first token of each word.
-                elif word_idx != previous_word_idx:
-                    label_ids.append(label[word_idx])
-                # For the other tokens in a word, we set the label to either the current label or -100, depending on
-                # the label_all_tokens flag.
+        labels_data = []
+        for s, l in zip(examples['sentences'], examples['labels_list']):
+            l = l.split(', ')
+            tokenized_inputs = self.tokenizer(s, truncation=True)
+            labels = []
+            for word_id in tokenized_inputs.word_ids():
+                if word_id == None:
+                    labels.append(-100)
                 else:
-                    label_ids.append(-100)
-                previous_word_idx = word_idx
+                    try:
+                        labels.append(l[word_id])
+                    except IndexError:
+                        labels.append(self.labels_list.index('V'))
+            labels_data.append(labels)
 
-            labels.append(label_ids)
-
-        tokenized_inputs["labels"] = labels
+        tokenized_inputs["labels"] = labels_data
         return tokenized_inputs
 
 
@@ -103,6 +103,10 @@ def compute_metrics(p):
         "f1": results["overall_f1"],
         "accuracy": results["overall_accuracy"],
     }
+
+
+class DataCollator:
+    pass
 
 # preprocess
 #   tokenizer
