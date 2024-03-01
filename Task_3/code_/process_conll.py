@@ -8,10 +8,13 @@ def _get_predicates_from_sentence(lines):
     
     for line in lines[2:]:
         split_line = line.split('\t')
-        if any([c == 'V' for c in line.split('\t')[11:]]):
+        if any([c == 'V' for c in split_line[11:]]):
             pred_index = split_line.index('V')
-            pred_positions.append(int(line.split('\t')[0])-1)
-            pred_columns.append(pred_index)
+            if not split_line[0].isdigit():
+                print('found shit:', split_line[0:1])
+            else:
+                pred_positions.append(int(split_line[0])-1)
+                pred_columns.append(pred_index)
     return pred_positions, pred_columns
 
 
@@ -27,6 +30,8 @@ def process_file(conll_file)->pd.DataFrame:
             lines = lines[1:]
         if lines[0].startswith('# newdoc'):
             lines = lines[1:]
+    
+        
         if len(lines) > 1:
             sentence_text = lines[1][len('# text = '):]  # everything after "# text = ""
             pred_idxs, pred_cols = _get_predicates_from_sentence(lines)
@@ -36,7 +41,6 @@ def process_file(conll_file)->pd.DataFrame:
             for idx, col, label in zip(pred_idxs, pred_cols, labels):
                 word = lines[idx+2].split('\t')[1]
                 big_df.loc[len(big_df.index)] = [sentence_text, word, col, ', '.join(label)]
-                # big_df.loc[len(big_df.index)] = [sentence_text, word, idx, col]
         
     print('process_file(): dataframe len:', len(big_df))
     return big_df
@@ -47,7 +51,10 @@ def find_tokens_args(lines, pred_cols):
         labels.append([])
         for line in lines[2:]:
             tags = line.split('\t')
-            labels[i].append(tags[predicate_col])
+            try:
+                labels[i].append(tags[predicate_col])
+            except:
+                pass
     return labels
 
     # for sentence, predicate_columns in zip(sent_list, pred_cols):
