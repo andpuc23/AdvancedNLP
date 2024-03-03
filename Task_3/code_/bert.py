@@ -33,12 +33,14 @@ def convert_to_dataset(train:pd.DataFrame,
 
 def get_labels_list_from_dataset(ds:DatasetDict):
     labels_set = set()
-    for label in ds['train']['labels']:
-        vals = label.split(', ')
-        for v in vals:
-            labels_set.add(v)
-    if '' in labels_set:
-        labels_set.remove('')
+    
+    for ds_name in ['train', 'test', 'validation']:
+        for label in ds[ds_name]['labels']:
+            vals = label.split(', ')
+            for v in vals:
+                labels_set.add(v)
+        # if '' in labels_set:
+        #     labels_set.remove('')
     labels_list = list(labels_set)
     return labels_list
 
@@ -63,22 +65,24 @@ class Tokenizer:
 
     
     def tokenize_and_align_labels(self, examples):
-        labels_data = []
-        for s, l in zip(examples['sentences'], examples['labels_list']):
-            l = l.split(', ')
-            tokenized_inputs = self.tokenizer(s, truncation=True)
-            labels = []
-            for word_id in tokenized_inputs.word_ids():
-                if word_id == None:
-                    labels.append(-100)
-                else:
-                    try:
-                        labels.append(l[word_id])
-                    except IndexError:
-                        labels.append(self.labels_list.index('V'))
-            labels_data.append(labels)
+        global labels_list
+        tokenized_sentences = self.tokenizer(examples["sentence"], truncation=True, is_split_into_words=True)
+        tokenized_predicates = self.tokenizer(examples['predicate'], truncation=False, is_split_into_words=False)
 
-        tokenized_inputs["labels"] = labels_data
+        tokenized_inputs = dict()
+        for key in tokenized_sentences.keys():
+            tokenized_inputs[key] = [v1 + [self.tokenizer.sep_token_id] + v2[1:] for v1, v2 in zip(tokenized_sentences[key], tokenized_predicates[key])]
+        # tokenized_inputs = Dataset.from_dict(tokenized_inputs)
+        list_of_labels_list = [l.split(', ') for l in examples['labels']]
+
+        # with open('labels.txt', 'w') as f:
+        #     f.writelines(['\n'.join(l) for l in list_of_labels_list])
+
+
+        encoded_labels = [[labels_list.index(single_label) for single_label in label] for label in list_of_labels_list]
+        
+        tokenized_inputs['labels'] = encoded_labels
+        
         return tokenized_inputs
 
 

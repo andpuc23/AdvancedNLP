@@ -20,7 +20,7 @@ def _get_predicates_from_sentence(lines):
 
     
 def process_file(conll_file)->pd.DataFrame:
-    big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'pred columns values'])
+    big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'labels'])
     with open(conll_file) as f:
         text = f.read()
     sentences = text.split('\n\n')  # split by empty line - sent id+text+table with features
@@ -59,6 +59,7 @@ def find_tokens_args(lines, pred_cols):
     
 
 def extract_features(dataframe)->pd.DataFrame:
+    raise ValueError("do not use this method!!")
     df = pd.DataFrame(columns=['sentences', 'labels', 'labels_list'])
     df.sentences = [a + ['[SEP]', b] for a, b in zip(dataframe['sentence'].values, dataframe['predicate'].values)]
     # for now I put here the index of word, but it should be the label we predict
