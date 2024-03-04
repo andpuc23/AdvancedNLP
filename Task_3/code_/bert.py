@@ -44,6 +44,7 @@ def get_labels_list_from_dataset(ds:DatasetDict):
     labels_list = list(labels_set)
     return labels_list
 
+
 class Tokenizer:
     def __init__(self, model_checkpoint, labels_list) -> None:
         """
@@ -72,11 +73,8 @@ class Tokenizer:
         tokenized_inputs = dict()
         for key in tokenized_sentences.keys():
             tokenized_inputs[key] = [v1 + [self.tokenizer.sep_token_id] + v2[1:] for v1, v2 in zip(tokenized_sentences[key], tokenized_predicates[key])]
-        # tokenized_inputs = Dataset.from_dict(tokenized_inputs)
+        
         list_of_labels_list = [l.split(', ') for l in examples['labels']]
-
-        # with open('labels.txt', 'w') as f:
-        #     f.writelines(['\n'.join(l) for l in list_of_labels_list])
 
 
         encoded_labels = [[labels_list.index(single_label) for single_label in label] for label in list_of_labels_list]
@@ -107,18 +105,3 @@ def compute_metrics(p):
         "f1": results["overall_f1"],
         "accuracy": results["overall_accuracy"],
     }
-
-
-class DataCollator:
-    pass
-
-# preprocess
-#   tokenizer
-#   tokenize + align
-#   do that with datasets
-
-# training
-#   collate
-#   trainer
-#   train
-
