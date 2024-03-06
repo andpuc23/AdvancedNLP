@@ -97,11 +97,11 @@ class Tokenizer:
         list_of_labels_list = [l.split(', ') for l in examples['labels']]
 
         labels_out = []
-        for i, (ex, labels_as_list) in enumerate(zip(examples, list_of_labels_list)):
-            sentence = ex['sentence']
+        for i, (sentence, predicate, labels_as_list) in enumerate(zip(examples['sentence'], examples['predicate'], list_of_labels_list)):
+            # sentence = ex['sentence']
             tokenized_sentence = self.tokenizer(sentence, truncation=True, is_split_into_words=True)
             labels = []
-            pred_position = sentence.index(ex['predicate'])
+            pred_position = sentence.index(predicate)
             for word_id in tokenized_sentence.word_ids():
                 try:
                     labels.append(-100 if word_id is None else labels_list.index(labels_as_list[word_id]))
@@ -109,9 +109,8 @@ class Tokenizer:
                     labels.append(labels_list.index('_')) # for specific example with 28 words and 27 labels
             
             count = tokenized_sentence.word_ids().count(pred_position)
-            predicate_label_ind = tokenized_sentence.word_ids().index(pred_position)
 
-            labels += [labels_list.index(labels_as_list[predicate_label_ind])]*count
+            labels += [labels_list.index('_')]*count
             labels.append(-100)
             
             labels_out.append(labels)
