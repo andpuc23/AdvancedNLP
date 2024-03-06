@@ -39,8 +39,6 @@ def get_labels_list_from_dataset(ds:DatasetDict):
             vals = label.split(', ')
             for v in vals:
                 labels_set.add(v)
-        # if '' in labels_set:
-        #     labels_set.remove('')
     labels_list = list(labels_set)
     return labels_list
 
@@ -64,6 +62,28 @@ class Tokenizer:
         else:
             raise TypeError(f'tokenizer input should be str or list, got {type(input)}')
 
+
+    def tokenize_align_labels_no_pred(self, examples):
+        global labels_list
+        tokenized_sentences = self.tokenizer(examples["sentence"], truncation=True, is_split_into_words=True)
+
+        list_of_labels_list = [l.split(', ') for l in examples['labels']]
+
+        encoded_labels = [[labels_list.index(single_label) for single_label in label] for label in list_of_labels_list]
+
+        underscore_id = labels_list.index('_')
+
+        for i, (s, l) in enumerate(zip(tokenized_sentences['input_ids'], encoded_labels)):
+            if len(s) == len(l):
+                continue
+            if len(s) == len(l) +2:
+                encoded_labels[i] = [underscore_id, *l, underscore_id] # cls, sentence, sep
+
+
+        tokenized_sentences['labels'] = encoded_labels
+        
+        return tokenized_sentences
+
     
     def tokenize_and_align_labels(self, examples):
         global labels_list
@@ -72,13 +92,22 @@ class Tokenizer:
 
         tokenized_inputs = dict()
         for key in tokenized_sentences.keys():
-            tokenized_inputs[key] = [v1 + [self.tokenizer.sep_token_id] + v2[1:] for v1, v2 in zip(tokenized_sentences[key], tokenized_predicates[key])]
+            tokenized_inputs[key] = [v1 + v2[1:] for v1, v2 in zip(tokenized_sentences[key], tokenized_predicates[key])]
         
         list_of_labels_list = [l.split(', ') for l in examples['labels']]
 
 
         encoded_labels = [[labels_list.index(single_label) for single_label in label] for label in list_of_labels_list]
         
+        underscore_id = labels_list.index('_')
+
+        for i, (s, l) in enumerate(zip(tokenized_sentences['input_ids'], encoded_labels)):
+            if len(s) == len(l):
+                continue
+            if len(s) > len(l):
+                encoded_labels[i] = [underscore_id, *l, underscore_id, *[underscore_id for _ in range(len(tokenized_predicates['input_ids'][i])-1)], underscore_id] # cls, sentence, sep, predicate, sep
+
+
         tokenized_inputs['labels'] = encoded_labels
         
         return tokenized_inputs
@@ -90,11 +119,11 @@ def compute_metrics(p):
 
     # Remove ignored index (special tokens)
     true_predictions = [
-        [labels_list[p] for (p, l) in zip(prediction, label) if l != -100]
+        [labels_list[p] for (p, l) in zip(prediction, label) if l != -100 and p < len(labels_list)]
         for prediction, label in zip(predictions, labels)
     ]
     true_labels = [
-        [labels_list[l] for (p, l) in zip(prediction, label) if l != -100]
+        [labels_list[l] for (p, l) in zip(prediction, label) if l != -100 and p < len(labels_list)]
         for prediction, label in zip(predictions, labels)
     ]
 

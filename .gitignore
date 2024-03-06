@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 .vscode*
+Task_3/distilbert-base-uncased-finetuned-ner/*
