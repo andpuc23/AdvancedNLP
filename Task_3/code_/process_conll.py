@@ -1,4 +1,3 @@
-# here we (will) have both reading of conllu and features extraction
 import pandas as pd
 
 def _get_predicates_from_sentence(lines):
@@ -47,13 +46,14 @@ def process_file(conll_file)->pd.DataFrame:
 
 
 def _get_context_of_predicate(sentence_words_list, word, idx):
-    context = [None, None, None]
-    if idx >= 1 and idx < len(sentence_words_list)-1:
-        token_before = sentence_words_list[idx-1]
-        token_after = sentence_words_list[idx+1]
-        context[0] = token_before
-        context[2] = token_after
-        context[1] = word
+    context = ['_', word, '_']
+
+    if idx >= 1:
+        context[0] = sentence_words_list[idx-1]
+
+    if idx < len(sentence_words_list)-1:
+        context[2] = sentence_words_list[idx+1]
+        
     return context
 
 
@@ -105,4 +105,3 @@ def extract_features(dataframe)->pd.DataFrame:
     df.labels = dataframe['pred columns values']
     df.labels_list = [l.split(', ') for l in df.labels]
     return df
-
