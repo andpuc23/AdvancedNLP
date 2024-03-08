@@ -4,7 +4,7 @@ def _get_predicates_from_sentence(lines):
     # here we expect that sentence is a number of lines
     pred_positions = []
     pred_columns = []
-    
+
     for line in lines[2:]:
         split_line = line.split('\t')
         if any([c == 'V' for c in split_line[11:]]):
@@ -17,7 +17,7 @@ def _get_predicates_from_sentence(lines):
     return pred_positions, pred_columns
 
 
-    
+
 def process_file(conll_file)->pd.DataFrame:
     big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'labels'])
     with open(conll_file) as f:
@@ -29,18 +29,18 @@ def process_file(conll_file)->pd.DataFrame:
             lines = lines[1:]
         if lines[0].startswith('# newdoc'):
             lines = lines[1:]
-    
-        
+
+
         if len(lines) > 1:
             sentence_words_list = [l.split('\t')[1] for l in lines[2:]]
             pred_idxs, pred_cols = _get_predicates_from_sentence(lines)
-            
+
             labels = find_tokens_args(lines, pred_cols)
 
             for idx, col, label in zip(pred_idxs, pred_cols, labels):
                 word = lines[idx+2].split('\t')[1]
                 big_df.loc[len(big_df.index)] = [sentence_words_list, word, col, ', '.join(label)]
-        
+
     print('process_file(): dataframe len:', len(big_df))
     return big_df
 
@@ -53,7 +53,7 @@ def _get_context_of_predicate(sentence_words_list, word, idx):
 
     if idx < len(sentence_words_list)-1:
         context[2] = sentence_words_list[idx+1]
-        
+
     return context
 
 
@@ -76,7 +76,7 @@ def advanced_process_file(conll_file)->pd.DataFrame:
                 word = lines[idx+2].split('\t')[1]
                 context = _get_context_of_predicate(sentence_words_list, word, idx)
                 big_df.loc[len(big_df.index)] = [sentence_words_list, word, col, context, ', '.join(label)]
-        
+
     print('advanced_process_file(): dataframe len:', len(big_df))
     return big_df
 
@@ -95,13 +95,3 @@ def find_tokens_args(lines, pred_cols):
             except:
                 pass
     return labels
-    
-
-def extract_features(dataframe)->pd.DataFrame:
-    raise ValueError("do not use this method!!")
-    df = pd.DataFrame(columns=['sentences', 'labels', 'labels_list'])
-    df.sentences = [a + ['[SEP]', b] for a, b in zip(dataframe['sentence'].values, dataframe['predicate'].values)]
-    # for now I put here the index of word, but it should be the label we predict
-    df.labels = dataframe['pred columns values']
-    df.labels_list = [l.split(', ') for l in df.labels]
-    return df

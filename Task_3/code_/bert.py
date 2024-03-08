@@ -11,8 +11,8 @@ metric = load_metric("seqeval")
 
 batch_size = 32 # subject to change, the bigger the better, but should fit into memory
 
-def convert_to_dataset(train:pd.DataFrame, 
-                       val:pd.DataFrame, 
+def convert_to_dataset(train:pd.DataFrame,
+                       val:pd.DataFrame,
                        test:pd.DataFrame)->DatasetDict:
     global labels_list
     train_ds = Dataset.from_pandas(train)
@@ -33,7 +33,7 @@ def convert_to_dataset(train:pd.DataFrame,
 
 def get_labels_list_from_dataset(ds:DatasetDict):
     labels_set = set()
-    
+
     for ds_name in ['train', 'test', 'validation']:
         for label in ds[ds_name]['labels']:
             vals = label.split(', ')
@@ -81,10 +81,10 @@ class Tokenizer:
             labels_out.append(labels)
 
         tokenized_sentences['labels'] = labels_out
-        
+
         return tokenized_sentences
 
-    
+
     def tokenize_and_align_labels_pred(self, examples):
         global labels_list
         tokenized_sentences = self.tokenizer(examples["sentence"], truncation=False, is_split_into_words=True)
@@ -93,7 +93,7 @@ class Tokenizer:
         tokenized_inputs = dict()
         for key in tokenized_sentences.keys():
             tokenized_inputs[key] = [v1 + v2[1:] for v1, v2 in zip(tokenized_sentences[key], tokenized_predicates[key])]
-        
+
         list_of_labels_list = [l.split(', ') for l in examples['labels']]
 
         labels_out = []
@@ -107,16 +107,16 @@ class Tokenizer:
                     labels.append(-100 if word_id is None else labels_list.index(labels_as_list[word_id]))
                 except:
                     labels.append(labels_list.index('_')) # for specific example with 28 words and 27 labels
-            
+
             count = tokenized_sentence.word_ids().count(pred_position)
 
             labels += [labels_list.index('_')]*count
             labels.append(-100)
-            
+
             labels_out.append(labels)
 
         tokenized_inputs['labels'] = labels_out
-        
+
         return tokenized_inputs
 
     def tokenize_and_align_labels_context(self, examples):
@@ -127,7 +127,7 @@ class Tokenizer:
         tokenized_inputs = dict()
         for key in tokenized_sentences.keys():
             tokenized_inputs[key] = [v1 + v2[1:] for v1, v2 in zip(tokenized_sentences[key], tokenized_context[key])]
-        
+
         list_of_labels_list = [l.split(', ') for l in examples['labels']]
 
         labels_out = []
@@ -141,7 +141,7 @@ class Tokenizer:
                     labels.append(-100 if word_id is None else labels_list.index(labels_as_list[word_id]))
                 except:
                     labels.append(labels_list.index('_')) # for specific example with 28 words and 27 labels
-            
+
 
             base_count = len(self.tokenizer('_')['input_ids'])-2
             for pred_position in pred_positions:
@@ -151,7 +151,7 @@ class Tokenizer:
                 count = word_ids.count(pred_position)
                 labels += [labels_list.index(labels_as_list[pred_position])]*count
             labels.append(-100)
-            
+
             labels_out.append(labels)
 
         tokenized_inputs['labels'] = labels_out
