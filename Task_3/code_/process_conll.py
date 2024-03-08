@@ -1,7 +1,9 @@
 import pandas as pd
 
 def _get_predicates_from_sentence(lines):
-    # here we expect that sentence is a number of lines
+    '''
+    
+    '''
     pred_positions = []
     pred_columns = []
 
@@ -18,11 +20,18 @@ def _get_predicates_from_sentence(lines):
 
 
 
-def process_file(conll_file)->pd.DataFrame:
+def process_file(conll_file:str)->pd.DataFrame:
+    '''
+    here we process .conllu file into dataframe and extract predicate from it
+    @param conll_file filename of the file with data
+    @return dataframe with columns 'sentence', 'predicate', 'pred columns', 'labels'
+    '''
+
     big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'labels'])
     with open(conll_file) as f:
         text = f.read()
     sentences = text.split('\n\n')  # split by empty line - sent id+text+table with features
+    # remove propbank name and newdoc id - we don't need them here
     for s in sentences:
         lines = s.split('\n')
         if lines[0].startswith('# propbank'):
@@ -32,8 +41,8 @@ def process_file(conll_file)->pd.DataFrame:
 
 
         if len(lines) > 1:
-            sentence_words_list = [l.split('\t')[1] for l in lines[2:]]
-            pred_idxs, pred_cols = _get_predicates_from_sentence(lines)
+            sentence_words_list = [l.split('\t')[1] for l in lines[2:]]  # skip sentence id and text
+            pred_idxs, pred_cols = _get_predicates_from_sentence(lines)  # extract predicate index in the sentence
 
             labels = find_tokens_args(lines, pred_cols)
 

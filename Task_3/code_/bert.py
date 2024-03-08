@@ -9,7 +9,7 @@ model_checkpoint = "distilbert-base-uncased"
 labels_list = None
 metric = load_metric("seqeval")
 
-batch_size = 32 # subject to change, the bigger the better, but should fit into memory
+batch_size = 32
 
 def convert_to_dataset(train:pd.DataFrame,
                        val:pd.DataFrame,
@@ -98,7 +98,6 @@ class Tokenizer:
 
         labels_out = []
         for i, (sentence, predicate, labels_as_list) in enumerate(zip(examples['sentence'], examples['predicate'], list_of_labels_list)):
-            # sentence = ex['sentence']
             tokenized_sentence = self.tokenizer(sentence, truncation=True, is_split_into_words=True)
             labels = []
             pred_position = sentence.index(predicate)
