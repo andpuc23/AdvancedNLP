@@ -8,17 +8,18 @@ nlp = spacy.load('en_core_web_sm')
 def extract_features(inputfile, outputfile):
 
     # inputfile = 'C:/Users/snipercapt/Desktop/ANLP/AdvancedNLP/Task_2/UP-1.0/output/dev.csv'
-    conll_file = pd.read_csv(inputfile, delimiter=',', header=None,  skipinitialspace = False, on_bad_lines='skip')
-    df = pd.DataFrame(conll_file)
+    df = pd.read_csv(inputfile, delimiter=',', header=None,  skipinitialspace = False, on_bad_lines='skip')
     index_within_sent = df[1].tolist()
     token_list = df[2].tolist()
     pos_list = df[4].tolist()
     head_index = df[7].tolist()
     enhanced_dependencies = df[8].tolist()
     gold_list = df[11].tolist()
+    labels_list = df[12].tolist()
     token_string = ' '.join(map(str, token_list))
     nlp.max_length = 5146276
     doc = nlp(token_string)
+    assert len(token_list) == len(labels_list)
     data = []
     head_list = []
     dependents_list = []
@@ -33,8 +34,40 @@ def extract_features(inputfile, outputfile):
         dependent = [t.text for t in tok.children]
         dependents_list.append(dependent)
         morph = tok.morph
-        feature_dict = {'Token': token, 'PoS': pos, 'Lemma': lemma, 'Dependency': dependency, 'Head': head, 'Head_POS': pos_head,
-                    'Morphological Feature': morph}#, 'Desc dep': desc_dep}
+        
+        path_to_head_text = []
+        path_to_head_pos  = []
+        cur = tok
+        try:
+            token_label = labels_list[token_list.index(token)]
+        except ValueError: # counter not in tokens, ther is counter-attack
+            token_label = '_'
+        label = None
+        while cur.has_head() and cur.head != cur and label != 'V':
+            path_to_head_text.append(cur.text)
+            path_to_head_pos.append(cur.pos_)
+            try:
+                index = token_list.index(cur.text)
+                label = labels_list[index]
+                role = enhanced_dependencies[index]
+                if label == 'V' or role[:4].lower() == 'root':
+                    break
+            except:
+                break
+            cur = cur.head
+
+        
+
+        feature_dict = {'Token': token, 
+                        'PoS': pos, 
+                        'Lemma': lemma, 
+                        'Dependency': dependency, 
+                        'Head': head, 
+                        'Head_POS': pos_head,
+                        'Morphological Feature': morph, 
+                        'Path to head texts':path_to_head_text, 
+                        'Path to head POS': path_to_head_pos, 
+                        'Label': token_label}#, 'Desc dep': desc_dep}
         data.append(feature_dict)
     
     #Voice

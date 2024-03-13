@@ -24,13 +24,26 @@ def split_gold_column(gold_list):
 def extract_features(inputfile, outputfile):
     conll_file = pd.read_csv(inputfile, delimiter=',', header=None,  skipinitialspace = False, on_bad_lines='skip')
     df = pd.DataFrame(conll_file)
+    
+    
     sentences = []
     sentence = ""
     for index, row in df.iterrows():
         if str(row[1]) == '1':
             sentences.append('\n\n')
             sentences.append(row)
-    #print(sentences)
+    # sentences = []
+    # sentence = ''
+    # for index in range(len(conll_file.index)):
+    #   row = conll_file.iloc[index]
+    #   if row[0] == 1:
+    #     sentences.append(sentence)
+    #     sentence = row[1]
+    #   else:
+    #     sentence += ' '+ row[1]
+    # sentences = sentences[1:]
+
+
     index_within_sent= df[0].tolist()
     token_list = df[1].tolist()
     pos_list = df[3].tolist()
@@ -133,7 +146,7 @@ def extract_features(inputfile, outputfile):
     # print('extracted phrase type')
 
 
-    featured_dict_1 = {'E_DEP': enhanced_dependencies, 'voice': voice}
+    featured_dict_1 = {'E_DEP': enhanced_dependencies}#, 'voice': voice}
     data.append(feature_dict)
         
     df = pd.DataFrame(data=data)
@@ -142,6 +155,6 @@ def extract_features(inputfile, outputfile):
     # outputfile = 'C:/Users/snipercapt/Desktop/ANLP/AdvancedNLP/Task_2/UP-1.0/features/dev.csv'
     df.to_csv(outputfile, sep='\t', index = False) 
 #file = 'outje'
-inputfile = '/content/drive/MyDrive/task22/outje222.csv'
-outputfile = '/content/drive/MyDrive/task22/outje333.csv'
-extract_features(inputfile, outputfile)
+# inputfile = '../UP-1.0/outje222.csv'
+# outputfile = '../UP-1.0/outje333.csv'
+# extract_features(inputfile, outputfile)
