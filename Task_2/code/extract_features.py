@@ -1,13 +1,16 @@
 import pandas as pd
 import spacy
-from spacy.matcher import Matcher
+import torch
 
 nlp = spacy.load('en_core_web_sm')
-# inputfile = '../UP-1.0/output/dev.csv'
 
 def extract_features(inputfile, outputfile):
-
-    # inputfile = 'C:/Users/snipercapt/Desktop/ANLP/AdvancedNLP/Task_2/UP-1.0/output/dev.csv'
+    '''
+    This function gives the features on a token-level. It takes as input the inputfile, and outputs a 
+    csv-file with each feature as a column, The token, pos, lemma, dependency, head, head pos-tag, 
+    morphological feature, word embeddings, named entities, path to the predicate in tokens, path to the 
+    predicate in pos-tags, context, and the context in pos are all features used for this SRL model. 
+    '''
     df = pd.read_csv(inputfile, delimiter=',', header=None,  skipinitialspace = False, on_bad_lines='skip')
     index_within_sent = df[1].tolist()
     token_list = df[2].tolist()
@@ -23,9 +26,31 @@ def extract_features(inputfile, outputfile):
     data = []
     head_list = []
     dependents_list = []
-    for tok in doc:
+    for i, tok in enumerate(doc):
+        cur = tok
+        context = []
+        if i > 1:
+          prev = doc[i-1]
+        else:
+          prev = None
+        if i < len(doc) - 1:
+          next = doc[i+1]
+        else:
+          next = None
+        context.append([prev, cur, next])
         token = tok.text 
         pos = tok.pos_
+        cur_pos = pos
+        context_pos = []
+        if i > 1:
+          prev_pos = doc[i-1]
+        else:
+          prev_pos = None
+        if i < len(doc) - 1:
+          next_pos = doc[i+1]
+        else:
+          next_pos = None
+        context_pos.append([prev_pos, cur_pos, next_pos])
         lemma = tok.lemma_
         dependency = tok.dep_
         head = tok.head
@@ -34,13 +59,13 @@ def extract_features(inputfile, outputfile):
         dependent = [t.text for t in tok.children]
         dependents_list.append(dependent)
         morph = tok.morph
-        
+        named_entities = tok.ent_type_ if tok.ent_type_ else '_'
+        word_embedding = torch.tensor(tok.vector)
         path_to_head_text = []
         path_to_head_pos  = []
-        cur = tok
         try:
             token_label = labels_list[token_list.index(token)]
-        except ValueError: # counter not in tokens, ther is counter-attack
+        except ValueError: # counter not in tokens, there is counter-attack
             token_label = '_'
         label = None
         while cur.has_head() and cur.head != cur and label != 'V':
@@ -56,8 +81,6 @@ def extract_features(inputfile, outputfile):
                 break
             cur = cur.head
 
-        
-
         feature_dict = {'Token': token, 
                         'PoS': pos, 
                         'Lemma': lemma, 
@@ -65,107 +88,22 @@ def extract_features(inputfile, outputfile):
                         'Head': head, 
                         'Head_POS': pos_head,
                         'Morphological Feature': morph, 
+                        'Word Embeddings': word_embedding,
+                        'Named Entities': named_entities,
                         'Path to head texts':path_to_head_text, 
-                        'Path to head POS': path_to_head_pos, 
-                        'Label': token_label}#, 'Desc dep': desc_dep}
+                        'Path to head POS': path_to_head_pos,
+                        'Context': context,
+                        'POS Context': context_pos,
+                        'Label': token_label}
         data.append(feature_dict)
-    
-    #Voice
-    voice = []
-    passive_set = {'nsubj:pass', 'aux:pass'}
-    for element in enhanced_dependencies:
-        if element in passive_set:
-            voice.append('passive')
-        elif 'nsubj' in element:
-            voice.append('active')
-        else:
-            voice.append(None)
-
-    print('exctacted voice')
-    #pos of dependents!! does this work properly? I wanted to implement a feature that gets the POS-tags of the tokens until the headword is reached, I could not implement it so that is why I came up with something similar like this:
-    # big_pos_tags_to_dependents = []
-    # big_distance = []
-    # for element in dependents_list:
-    #     doc = nlp(str(element))
-    #     pos_tags = []
-    #     for tok in doc:
-    #         pos = tok.pos_
-    #         pos_tags.append(pos)
-    #     big_pos_tags_to_dependents.append(pos_tags)
-    #     big_distance.append(len(pos_tags))
-
-    # feature_dict.update({'Big_distance':big_distance})
-
-    # print('extracted distance to deps')
-
-    # labels
-    # for ent in doc.ents:
-    #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
-    
-    # entity
-    feature_dict.update({'Entity_type': [tok.ent_type_ for tok in doc]})
-
-    
-
-    # I want to implement a feature that uses these patterns! I think they are very useful for finding the arguments!!!
-    #pattern_potential_arg =  
-                #subject-verb-object: [{dependency: nsubj or nsubjpass, head: VERB}, {dependency: obj, head:VERB}]
-                #subject-verb-compliment: [{dependency: nsubj or nsubjpass, head: VERB}, {dependency: xcomp, ccomp, acomp, or advcl, head: VERB}]
-                #verb with prepositional phrase: [{dependency: nsubj or nsubjpass, head: VERB}, case (preposition) to token which is then again attasched to verb with nmod or obl to head: VERB}]
-                #Averbial Modifier: [{dependency: advmod, head: VERB}]
-                #Verb with Clauses: {dependency: xcomp, ccomp, acomp, or advcl, head: VERB}
-
-    #CODE: Position of predicate in the sentence
-    
-    #CODE: Phrase type, take from assignment 1!!!
-    phrase_type = ['']*len(doc)
-    patterns = [{'POS': 'VBP', 'OP': '?'},
-                {'LEMMA': 'have', 'TAG': 'VBP', 'OP': '?'},
-                {'TEXT': 'not', 'OP': '?'},
-                {'TAG': 'VBP', 'OP': '?'},
-                {'POS': 'VERB', 'OP': '?'},
-                {'POS': 'ADV', 'OP': '*'},
-                {'POS': 'AUX', 'OP': '*'},
-                {'POS': 'VERB', 'OP': '+'}]
-
-    # matcher = spacy.matcher.Matcher(nlp.vocab)
-    # matcher.add("Verb phrase", [patterns])
-    # # VP
-    # matches = matcher(doc)
-    # for _, start, end in matches:
-    #     for i in range(start, end):
-    #         phrase_type[i] = 'VP'
-    
-    # # spans = [doc[start:end] for _, start, end in matches]
-
-    # ## PP
-    # for i, element in enumerate(doc):
-    #     if element.pos_ == 'ADP':
-    #         phrase_type[i] = 'PP'
-
-
-    # # print('PPs:', pps)
-
-    # ## NP
-    # for i, element in enumerate(doc):
-    #     if element.text in set(doc.noun_chunks):
-    #         phrase_type[i] = 'NP'   
-    
-    # # print('NPs:', [np for np in doc.noun_chunks])
-
-    # print('extracted phrase type')
-
-
-    featured_dict_1 = {'E_DEP': enhanced_dependencies, 'voice': voice}
-    feature_dict.update(featured_dict_1)
-    data.append(feature_dict)
-        
+            
     df = pd.DataFrame(data=data)
     df['Gold'] = pd.Series(gold_list)    
                 
-    # outputfile = 'C:/Users/snipercapt/Desktop/ANLP/AdvancedNLP/Task_2/UP-1.0/features/dev.csv'
     df.to_csv(outputfile, sep='\t', index = False) 
+#inputfile = '/content/drive/MyDrive/task22/dev1.csv'
+#outputfile = '/content/drive/MyDrive/task22/devout2.csv'
 
-# inputfile = '/Users/sezentuvay/Documents/advanced_nlp/Assignment2AdvancedNLP/data/output/tryout_dev.csv'
-# outputfile = '/Users/sezentuvay/Documents/advanced_nlp/Assignment2AdvancedNLP/data/output_extract_features/tryout-dev.csv'
-# extract_features(inputfile, outputfile)
+#inputfile = '/Users/sezentuvay/Documents/advanced_nlp/Assignment2AdvancedNLP/data/output/tryout_dev.csv'
+#outputfile = '/Users/sezentuvay/Documents/advanced_nlp/Assignment2AdvancedNLP/data/output_extract_features/tryout-dev.csv'
+#extract_features(inputfile, outputfile)
