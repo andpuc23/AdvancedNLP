@@ -4,6 +4,21 @@ import torch
 
 nlp = spacy.load('en_core_web_sm')
 
+def split_gold_column(gold_list):
+    predicates = []
+    arguments = []
+    for element in gold_list:
+      if element == '_':
+        predicates.append('_')
+        arguments.append('_')
+      elif element == 'V':
+        predicates.append('V')
+        arguments.append('_')
+      else:
+        predicates.append('_')
+        arguments.append(element)
+    return predicates, arguments
+
 def extract_features(inputfile, outputfile):
     '''
     This function gives the features on a token-level. It takes as input the inputfile, and outputs a 
@@ -18,6 +33,7 @@ def extract_features(inputfile, outputfile):
     head_index = df[7].tolist()
     enhanced_dependencies = df[8].tolist()
     gold_list = df[11].tolist()
+    predicates, arguments = split_gold_column(gold_list)
     labels_list = df[12].tolist()
     token_string = ' '.join(map(str, token_list))
     nlp.max_length = 5146276
@@ -101,9 +117,3 @@ def extract_features(inputfile, outputfile):
     df['Gold'] = pd.Series(gold_list)    
                 
     df.to_csv(outputfile, sep='\t', index = False) 
-#inputfile = '/content/drive/MyDrive/task22/dev1.csv'
-#outputfile = '/content/drive/MyDrive/task22/devout2.csv'
-
-#inputfile = '/Users/sezentuvay/Documents/advanced_nlp/Assignment2AdvancedNLP/data/output/tryout_dev.csv'
-#outputfile = '/Users/sezentuvay/Documents/advanced_nlp/Assignment2AdvancedNLP/data/output_extract_features/tryout-dev.csv'
-#extract_features(inputfile, outputfile)
