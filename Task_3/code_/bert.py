@@ -18,7 +18,7 @@ def convert_to_dataset(train:pd.DataFrame,
     train_ds = Dataset.from_pandas(train)
     val_ds = Dataset.from_pandas(val)
     test_ds = Dataset.from_pandas(test)
-
+    
     ds = DatasetDict()
 
     ds['train'] = train_ds
@@ -28,6 +28,7 @@ def convert_to_dataset(train:pd.DataFrame,
     if not labels_list:
         labels_list = get_labels_list_from_dataset(ds)
 
+    
     return ds
 
 
@@ -39,7 +40,7 @@ def get_labels_list_from_dataset(ds:DatasetDict):
             vals = label.split(', ')
             for v in vals:
                 labels_set.add(v)
-    labels_list = list(labels_set)
+    labels_list = sorted(list(labels_set))
     return labels_list
 
 
@@ -64,7 +65,6 @@ class Tokenizer:
 
 
     def tokenize_align_labels_no_pred(self, examples):
-        global labels_list
         tokenized_sentences = self.tokenizer(examples["sentence"], truncation=True, is_split_into_words=True)
 
         list_of_labels_list = [l.split(', ') for l in examples['labels']]
@@ -75,9 +75,9 @@ class Tokenizer:
             labels = []
             for word_id in tokenized_sentence.word_ids():
                 try:
-                    labels.append(-100 if word_id is None else labels_list.index(labels_as_list[word_id]))
+                    labels.append(-100 if word_id is None else self.labels_list.index(labels_as_list[word_id]))
                 except:
-                    labels.append(labels_list.index('_')) # for specific example with 28 words and 27 labels
+                    labels.append(self.labels_list.index('_')) # for specific example with 28 words and 27 labels
             labels_out.append(labels)
 
         tokenized_sentences['labels'] = labels_out
@@ -86,7 +86,6 @@ class Tokenizer:
 
 
     def tokenize_and_align_labels_pred(self, examples):
-        global labels_list
         tokenized_sentences = self.tokenizer(examples["sentence"], truncation=False, is_split_into_words=True)
         tokenized_predicates = self.tokenizer(examples["predicate"], truncation=False, is_split_into_words=False)
 
@@ -103,13 +102,13 @@ class Tokenizer:
             pred_position = sentence.index(predicate)
             for word_id in tokenized_sentence.word_ids():
                 try:
-                    labels.append(-100 if word_id is None else labels_list.index(labels_as_list[word_id]))
+                    labels.append(-100 if word_id is None else self.labels_list.index(labels_as_list[word_id]))
                 except:
-                    labels.append(labels_list.index('_')) # for specific example with 28 words and 27 labels
+                    labels.append(self.labels_list.index('_')) # for specific example with 28 words and 27 labels
 
             count = tokenized_sentence.word_ids().count(pred_position)
 
-            labels += [labels_list.index('_')]*count
+            labels += [self.labels_list.index('_')]*count
             labels.append(-100)
 
             labels_out.append(labels)
@@ -119,7 +118,6 @@ class Tokenizer:
         return tokenized_inputs
 
     def tokenize_and_align_labels_context(self, examples):
-        global labels_list
         tokenized_sentences = self.tokenizer(examples["sentence"], truncation=False, is_split_into_words=True)
         tokenized_context = self.tokenizer(examples["context"], truncation=False, is_split_into_words=True)
 
@@ -137,18 +135,18 @@ class Tokenizer:
             word_ids = tokenized_sentence.word_ids()
             for word_id in word_ids:
                 try:
-                    labels.append(-100 if word_id is None else labels_list.index(labels_as_list[word_id]))
+                    labels.append(-100 if word_id is None else self.labels_list.index(labels_as_list[word_id]))
                 except:
-                    labels.append(labels_list.index('_')) # for specific example with 28 words and 27 labels
+                    labels.append(self.labels_list.index('_')) # for specific example with 28 words and 27 labels
 
 
             base_count = len(self.tokenizer('_')['input_ids'])-2
             for pred_position in pred_positions:
                 if pred_position == -1:
-                    labels += [labels_list.index('_')]*base_count
+                    labels += [self.labels_list.index('_')]*base_count
                     continue
                 count = word_ids.count(pred_position)
-                labels += [labels_list.index(labels_as_list[pred_position])]*count
+                labels += [self.labels_list.index(labels_as_list[pred_position])]*count
             labels.append(-100)
 
             labels_out.append(labels)
@@ -157,6 +155,7 @@ class Tokenizer:
         return tokenized_inputs
 
 def compute_metrics(p):
+
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
 
@@ -171,9 +170,10 @@ def compute_metrics(p):
     ]
 
     results = metric.compute(predictions=true_predictions, references=true_labels)
+
     return {
-        "precision": results["overall_precision"],
-        "recall": results["overall_recall"],
-        "f1": results["overall_f1"],
-        "accuracy": results["overall_accuracy"],
-    }
+            "precision": results["overall_precision"],
+            "recall": results["overall_recall"],
+            "f1": results["overall_f1"],
+            "accuracy": results["overall_accuracy"],
+        }

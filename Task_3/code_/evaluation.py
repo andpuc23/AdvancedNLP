@@ -66,7 +66,7 @@ def shrink_predictions(word_ids, predictions):
                 final_dicts_ids_and_preds[word_id] = '_'
     values_list = [value for value in final_dicts_ids_and_preds.values()]
     return values_list
-    #return [dict_ids_and_preds[key][0] for key in sorted(dict_ids_and_preds.keys(), reverse=True)]
+    # return [dict_ids_and_preds[key][0] for key in sorted(dict_ids_and_preds.keys(), reverse=True)]
     # print(final_dicts_ids_and_preds)
 
 # shrink_predictions(word_ids, predictions)
