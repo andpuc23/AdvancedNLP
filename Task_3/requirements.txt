@@ -6,3 +6,4 @@ datasets
 seqeval
 accelerate
 numpy>=1.20
+seaborn

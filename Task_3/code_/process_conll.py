@@ -28,7 +28,7 @@ def process_file(conll_file:str)->pd.DataFrame:
     '''
 
     big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'labels'])
-    with open(conll_file) as f:
+    with open(conll_file, encoding='utf8') as f:
         text = f.read()
     sentences = text.split('\n\n')  # split by empty line - sent id+text+table with features
     # remove propbank name and newdoc id - we don't need them here
