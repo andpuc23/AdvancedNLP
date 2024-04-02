@@ -2,7 +2,10 @@ import pandas as pd
 
 def _get_predicates_from_sentence(lines):
     '''
-    
+    Extracts the predicate positions indices from sentence
+    Most probabaly you won't need this
+    :param lines:list[str] the sentence from .conllu file
+    :out tuple(list[int], list[int]) predicate positions in sentence; columns of each predicate in columnized line
     '''
     pred_positions = []
     pred_columns = []
@@ -23,8 +26,8 @@ def _get_predicates_from_sentence(lines):
 def process_file(conll_file:str)->pd.DataFrame:
     '''
     here we process .conllu file into dataframe and extract predicate from it
-    @param conll_file filename of the file with data
-    @return dataframe with columns 'sentence', 'predicate', 'pred columns', 'labels'
+    :param conll_file:str filename of the file with data
+    :return dataframe with columns 'sentence', 'predicate', 'pred columns', 'labels'
     '''
 
     big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'labels'])
@@ -55,6 +58,13 @@ def process_file(conll_file:str)->pd.DataFrame:
 
 
 def _get_context_of_predicate(sentence_words_list, word, idx):
+    """
+    Get words before and after predicate
+    :param sentence_words_list:list[str] sentence split into a list of words
+    :param word:str predicate to look around
+    :param idx:int index of the predicate
+    :out context:list[str] list of 3 words: before predicate, pred. itself, after pred.
+    """
     context = ['_', word, '_']
 
     if idx >= 1:
@@ -67,6 +77,12 @@ def _get_context_of_predicate(sentence_words_list, word, idx):
 
 
 def advanced_process_file(conll_file)->pd.DataFrame:
+    """
+    here we process .conllu file into dataframe and extract predicate from it, along with its context
+    :param conll_file:str filename of the file with data
+    :return dataframe with columns 'sentence', 'predicate', 'pred columns', 'labels'
+    """
+
     big_df = pd.DataFrame(columns=['sentence', 'predicate', 'pred columns', 'context', 'labels'])
     with open(conll_file) as f:
         text = f.read()
@@ -91,6 +107,12 @@ def advanced_process_file(conll_file)->pd.DataFrame:
 
 
 def find_tokens_args(lines, pred_cols):
+    """
+    Get labels from lines of sentence
+    :param lines:list[str] the sentence from .conllu file
+    :pred_cols:list[int] columns of predicates of the sentence to extract the argument labels from
+    :out labels:list[list[str]] list of label lists for each of predicates in the sentence
+    """
     labels = []
     for i, predicate_col in enumerate(pred_cols):
         labels.append([])

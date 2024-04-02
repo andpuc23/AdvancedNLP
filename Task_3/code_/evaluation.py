@@ -1,5 +1,4 @@
 from sklearn.metrics import classification_report, confusion_matrix
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -7,11 +6,13 @@ def class_report(file):
     '''
     Since the file does not contain sentences without predicates, the last item of each list in the gold and 
     predicates file is removed. This item represented the predicate itself
+    Prints the classification report; saves the confusion matrix figure in the same folder
+    :param file:str path to file with predictions, should be found in data/output
     '''
-    eval_labels_list = ['ARG0', 'ARG1', 'ARG1-DSP', 'ARG2', 'ARG3', 'ARG4', 'ARG5', 'ARGA', 'ARGM-ADJ', 'ARGM-ADV', 'ARGM-CAU', 'ARGM-COM', 'ARGM-CXN', 'ARGM-DIR', 'ARGM-DIS', 'ARGM-EXT', 'ARGM-GOL', 'ARGM-LOC', 'ARGM-LVB', 'ARGM-MNR', 'ARGM-MOD', 'ARGM-NEG', 'ARGM-PRD', 'ARGM-PRP', 'ARGM-PRR', 'ARGM-REC', 'ARGM-TMP', 'C-ARG0', 'C-ARG1', 'C-ARG1-DSP', 'C-ARG2', 'C-ARG3', 'C-ARG4', 'C-ARGM-ADV', 'C-ARGM-COM', 'C-ARGM-CXN', 'C-ARGM-DIR', 'C-ARGM-EXT', 'C-ARGM-GOL', 'C-ARGM-LOC', 'C-ARGM-MNR', 'C-ARGM-PRP', 'C-ARGM-PRR', 'C-ARGM-TMP', 'R-ARG0', 'R-ARG1', 'R-ARG2', 'R-ARG3', 'R-ARG4', 'R-ARGM-ADJ', 'R-ARGM-ADV', 'R-ARGM-CAU', 'R-ARGM-COM', 'R-ARGM-DIR', 'R-ARGM-GOL', 'R-ARGM-LOC', 'R-ARGM-MNR', 'R-ARGM-TMP', '_']
+    eval_labels_list = ["'ARG0'", "'ARG1'", "'ARG1-DSP'", "'ARG2'", "'ARG3'", "'ARG4'", "'ARG5'", "'ARGA'", "'ARGM-ADJ'", "'ARGM-ADV'", "'ARGM-CAU'", "'ARGM-COM'", "'ARGM-CXN'", "'ARGM-DIR'", "'ARGM-DIS'", "'ARGM-EXT'", "'ARGM-GOL'", "'ARGM-LOC'", "'ARGM-LVB'", "'ARGM-MNR'", "'ARGM-MOD'", "'ARGM-NEG'", "'ARGM-PRD'", "'ARGM-PRP'", "'ARGM-PRR'", "'ARGM-REC'", "'ARGM-TMP'", "'C-ARG0'", "'C-ARG1'", "'C-ARG1-DSP'", "'C-ARG2'", "'C-ARG3'", "'C-ARG4'", "'C-ARGM-ADV'", "'C-ARGM-COM'", "'C-ARGM-CXN'", "'C-ARGM-DIR'", "'C-ARGM-EXT'", "'C-ARGM-GOL'", "'C-ARGM-LOC'", "'C-ARGM-MNR'", "'C-ARGM-PRP'", "'C-ARGM-PRR'", "'C-ARGM-TMP'", "'R-ARG0'", "'R-ARG1'", "'R-ARG2'", "'R-ARG3'", "'R-ARG4'", "'R-ARGM-ADJ'", "'R-ARGM-ADV'", "'R-ARGM-CAU'", "'R-ARGM-COM'", "'R-ARGM-DIR'", "'R-ARGM-GOL'", "'R-ARGM-LOC'", "'R-ARGM-MNR'", "'R-ARGM-TMP'", "'_'"]
     df = pd.read_csv(file)
-    all_predictions = [item.strip("[]").split(",") for item in df['pred_restored']]
-    all_gold = [item.strip("[]").split(",") for item in df['gold_restored']]
+    all_predictions = [item.strip("[]").split(", ") for item in df['pred_restored']]
+    all_gold = [item.strip("[]").split(", ") for item in df['gold_restored']]
 
 
     all_predictions = [label.strip() for a_list in all_predictions for label in a_list]
@@ -19,11 +20,14 @@ def class_report(file):
     report = classification_report(all_gold, all_predictions, labels=eval_labels_list)
     print(report)
 
-    cm=confusion_matrix(all_gold, all_predictions)
-    df_cm = pd.DataFrame(cm, index = [l[1:-1] for l in eval_labels_list], columns = [l[1:-1] for l in eval_labels_list])
-    plot = sns.heatmap(df_cm, annot=True)
-    fig = plot.figure
-    fig.savefig(f'{"/".join(file.split("/")[:-1])}/conf_matrix.png')
+    # I tried to show a beautiful confusion matrix heatmap, but no luck :(
+
+    # cm=confusion_matrix(all_gold, all_predictions, labels=eval_labels_list)
+    # df_cm = pd.DataFrame(cm, index = [l[1:-1] for l in eval_labels_list], columns = [l[1:-1] for l in eval_labels_list])
+    # sns.set_theme(rc={'figure.figsize':(20, 18)})
+    # plot = sns.heatmap(df_cm, annot=True)
+    # fig = plot.figure
+    # fig.savefig(f'{"/".join(file.split("/")[:-1])}/conf_matrix.png')
 
     
 

@@ -15,6 +15,14 @@ batch_size = 64
 def convert_to_dataset(train:pd.DataFrame,
                        val:pd.DataFrame,
                        test:pd.DataFrame)->DatasetDict:
+    
+    """
+    Processes dataframes into HF dataset
+    :param train: training paert of dataset
+    :param val: validation paert of dataset
+    :param test: testing paert of dataset
+    :out ds: HF dataset of train, validation, test parts with columns from df's
+    """
     global labels_list
     train_ds = Dataset.from_pandas(train)
     val_ds = Dataset.from_pandas(val)
@@ -34,6 +42,11 @@ def convert_to_dataset(train:pd.DataFrame,
 
 
 def get_labels_list_from_dataset(ds:DatasetDict):
+    """
+    Creates a list of all labels from dataset, excluding V and C-V
+    :param ds: HF dataset to extract labels from
+    :out labels_list: list of str's
+    """
     labels_set = set()
 
     for ds_name in ['train', 'test', 'validation']:
@@ -50,7 +63,9 @@ def get_labels_list_from_dataset(ds:DatasetDict):
 class Tokenizer:
     def __init__(self, model_checkpoint, labels_list) -> None:
         """
-        :param model_checkpoint
+        Creates a decorator over HF Tokenizer to do the dataset tokenizetion
+        :param model_checkpoint checkpoint for tokenizer
+        :param labels_list List of dataset labels
         """
         self.tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
         assert isinstance(self.tokenizer, transformers.PreTrainedTokenizerFast), "tokenizer is not PreTrainedTokenizerFast!"
@@ -58,16 +73,12 @@ class Tokenizer:
         self.labels_list = labels_list
 
 
-    def _tokenize_input_string(self, input):
-        if isinstance(input, str):
-            return self.tokenizer(input, truncation=True)
-        elif isinstance(input, list):
-            return self.tokenizer(input, truncation=True, is_split_into_words=True)
-        else:
-            raise TypeError(f'tokenizer input should be str or list, got {type(input)}')
-
-
     def tokenize_and_align_labels_pred(self, examples):
+        """
+        Tokenizes the dataset for baseline model, to [CLS] sentence [SEP] predicate [SEP] format
+        :param examples:Dataset untokenized dataset
+        :out tokenized_inputs:Dataset tokenized dataset with inputs, attention masks, labels
+        """
         tokenized_sentences = self.tokenizer(examples["sentence"], truncation=False, is_split_into_words=True)
         tokenized_predicates = self.tokenizer(examples["predicate"], truncation=False, is_split_into_words=False)
 
@@ -98,6 +109,12 @@ class Tokenizer:
         return tokenized_inputs
 
     def tokenize_and_align_labels_context(self, examples):
+        """
+        Tokenizes the dataset for advanced model, to [CLS] sentence [SEP] word_before predicate word_after [SEP] format
+        :param examples:Dataset untokenized dataset
+        :out tokenized_inputs:Dataset tokenized dataset with inputs, attention masks, labels
+        """
+
         tokenized_sentences = self.tokenizer(examples["sentence"], truncation=False, is_split_into_words=True)
         tokenized_context = self.tokenizer(examples["context"], truncation=False, is_split_into_words=True)
 
@@ -137,7 +154,11 @@ class Tokenizer:
         return tokenized_inputs
 
 def compute_metrics(p):
-
+    """
+    Computes the metrics of model, required for training
+    :param p:tuple of predictions and labels
+    :out results:dict with metrics: accuracy, precision, recall, f1
+    """
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
 
@@ -162,7 +183,15 @@ def compute_metrics(p):
 
 
 
-def predict(trainer, tokenizer, dataset, tokenized_dataset, test_set, ):
+def predict(trainer, tokenizer, dataset, tokenized_dataset, test_set):
+    """
+    Performs the inference of the model
+    :param trainer: HF Trainer with model and hyperparameters
+    :param tokenizer: our Tokenizer
+    :param dataset: untokenized dataset
+    :param tokenized_dataset speaks for itself
+    :param test_set:str label of the dataset partition to predict and calculate metrics on
+    """
     if test_set not in ['train', 'test', 'validation']:
         raise ValueError('Unknown partition of dataset!')
     ds_test = dataset[test_set]
